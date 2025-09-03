@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulateur de Smart TV</title>
+  <meta name="viewport" content="width=1280, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    body {
+      background: #23272f;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    #tv-frame {
+      width: 1280px;
+      height: 720px;
+      margin: 30px auto 0;
+      background: #111;
+      border: 16px solid #333;
+      border-radius: 24px;
+      box-shadow: 0 0 48px #000b, 0 12px 40px #000c;
+      position: relative;
+    }
+    #app-bar {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #21252bde;
+      border-radius: 24px;
+      padding: 8px 18px;
+      z-index: 10;
+      box-shadow: 0 3px 12px #000a;
+    }
+    .app-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 16px;
+      border-radius: 16px;
+      background: #444;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 2px 12px #0005;
+      border: 3px solid transparent;
+      position: relative;
+      user-select: none;
+    }
+    .app-icon.selected, .app-icon:focus {
+      border: 3px solid #59a6ff;
+      transform: scale(1.07);
+      z-index: 2;
+    }
+    .app-label {
+      font-size: 13px;
+      margin-top: 5px;
+      color: #e0e0e0;
+      text-shadow: 0 1px 2px #000c;
+      letter-spacing: 0.5px;
+    }
+    #screen {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      background: #181b23;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .app-container {
+      width: 96%;
+      height: 90%;
+      margin: 2%;
+      background: #23272f;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px #0006;
+      padding: 32px;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      overflow: auto;
+      position: relative;
+      font-size: 1.2rem;
+      animation: fadeIn 0.5s;
+    }
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: scale(0.97);}
+      100% { opacity: 1; transform: scale(1);}
+    }
+    #yt-player {
+      width: 80vw;
+      max-width: 900px;
+      aspect-ratio: 16/9;
+      border-radius: 14px;
+      border: none;
+      box-shadow: 0 0 18px #000c;
+      margin: 0 auto;
+      display: block;
+    }
+    #spotify-player {
+      width: 72vw;
+      max-width: 600px;
+      height: 80px;
+      border: none;
+      border-radius: 14px;
+      margin: 24px auto 0;
+      display: block;
+      box-shadow: 0 2px 14px #0005;
+    }
+    .weather-block {
+      display: flex;
+      align-items: center;
+      gap: 38px;
+    }
+    .weather-icon {
+      font-size: 80px;
+      margin-right: 16px;
+      filter: drop-shadow(0 3px 7px #0006);
+    }
+    .weather-details {
+      font-size: 2.2rem;
+      font-weight: bold;
+    }
+    #tv-live-player, #tv-replay-player {
+      width: 80vw;
+      max-width: 900px;
+      aspect-ratio: 16/9;
+      border-radius: 14px;
+      border: none;
+      box-shadow: 0 0 18px #000c;
+      margin: 0 auto;
+      display: block;
+      background: #000;
+    }
+    .tv-channel-bar {
+      display: flex;
+      gap: 18px;
+      margin: 28px 0 0 0;
+      flex-wrap: wrap;
+    }
+    .tv-channel-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #23272f;
+      border-radius: 8px;
+      padding: 7px 16px;
+      border: 2px solid #444;
+      color: #fff;
+      font-size: 1.07rem;
+      cursor: pointer;
+      transition: background 0.15s, border 0.15s;
+    }
+    .tv-channel-btn.selected, .tv-channel-btn:focus {
+      background: #59a6ff;
+      border: 2px solid #59a6ff;
+      color: #fff;
+    }
+    .tv-replay-bar {
+      margin: 18px 0 0 0;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .tv-replay-btn {
+      padding: 6px 14px;
+      border-radius: 7px;
+      border: 1.5px solid #59a6ff;
+      background: #181b23;
+      color: #59a6ff;
+      font-size: 1.02em;
+      cursor: pointer;
+      margin-bottom: 2px;
+      transition: background 0.16s, color 0.16s;
+    }
+    .tv-replay-btn.selected, .tv-replay-btn:focus {
+      background: #59a6ff;
+      color: #fff;
+    }
+    .tv-channel-list-modal {
+      position: absolute;
+      top: 45px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #181b23;
+      border-radius: 18px;
+      box-shadow: 0 4px 24px #000b;
+      padding: 24px 40px;
+      z-index: 200;
+      width: 540px;
+      max-width: 92vw;
+      color: #fff;
+      animation: fadeIn 0.2s;
+    }
+    .tv-channel-list-modal h3 {
+      margin-top: 0;
+      font-size: 1.4em;
+      margin-bottom: 10px;
+    }
+    .tv-channel-list-modal ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 270px;
+      overflow-y: auto;
+    }
+    .tv-channel-list-modal li {
+      padding: 8px 0;
+      font-size: 1.1em;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      cursor: pointer;
+    }
+    .tv-channel-list-modal li.selected {
+      background: #59a6ff44;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    .tv-guide-modal {
+      position: absolute;
+      top: 45px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #23272f;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px #000b;
+      padding: 19px 30px 17px 30px;
+      z-index: 210;
+      width: 620px;
+      max-width: 96vw;
+      color: #fff;
+      animation: fadeIn 0.2s;
+    }
+    .tv-guide-modal h3 {
+      margin-top: 0;
+      font-size: 1.4em;
+      margin-bottom: 10px;
+    }
+    .tv-guide-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 1.04em;
+    }
+    .tv-guide-table th, .tv-guide-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid #333;
+      text-align: left;
+    }
+    .tv-guide-table th {
+      background: #23272f;
+      color: #59a6ff;
+      font-size: 1.1em;
+    }
+    .store-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 36px;
+      margin-top: 24px;
+    }
+    .store-card {
+      background: #23272f;
+      border-radius: 14px;
+      box-shadow: 0 2px 16px #0004;
+      width: 200px;
+      padding: 18px 14px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      border: 2px solid #3a3f4a;
+    }
+    .store-card.installed {
+      opacity: 0.6;
+    }
+    .store-card .store-icon {
+      font-size: 46px;
+      margin-bottom: 8px;
+    }
+    .store-card .store-name {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-bottom: 7px;
+    }
+    .store-card .store-desc {
+      color: #bbb;
+      font-size: 0.94rem;
+      min-height: 45px;
+      margin-bottom: 12px;
+    }
+    .store-card button {
+      background: #59a6ff;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 7px 18px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: background 0.15s;
+    }
+    .store-card button:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+    #remote-controls {
+      position: absolute;
+      right: 24px;
+      bottom: 24px;
+      background: #222b;
+      border-radius: 18px;
+      padding: 11px 18px;
+      z-index: 11;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 1px 16px #0008;
+      user-select: none;
+    }
+    .remote-row {
+      display: flex;
+      gap: 7px;
+      justify-content: center;
+      margin-bottom: 2px;
+    }
+    .remote-btn {
+      font-size: 18px;
+      padding: 6px 16px 6px 16px;
+      background: #333b;
+      color: #eee;
+      border: 2px solid #222b;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 0 2px;
+      transition: background 0.15s;
+      min-width: 38px;
+      min-height: 38px;
+      outline: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .remote-btn:active {
+      background: #59a6ffbb;
+      color: #fff;
+    }
+    .remote-btn.ch { background: #222; color: #fff; border-color: #59a6ff; font-weight: bold;}
+    .remote-btn.g { background: #23272f; color: #59a6ff; border-color: #1976d2;}
+    .remote-btn.ok { background: #59a6ff; color: #fff; border-color: #1976d2;}
+    .remote-btn.home { background: #3a3f4a; color: #fff;}
+    .remote-btn.replay { background: #d1a928; color: #fff; border-color: #888;}
+    .remote-btn:focus { outline: 2px solid #59a6ff; }
+    @media (max-width: 1400px) {
+      #tv-frame {transform: scale(0.85);}
+    }
+    @media (max-width: 1100px) {
+      #tv-frame {transform: scale(0.6);}
+    }
+    @media (max-width: 900px) {
+      #tv-frame {transform: scale(0.45);}
+    }
+  </style>
+</head>
+<body>
+  <div id="tv-frame">
+    <div id="screen"></div>
+    <div id="app-bar"></div>
+    <div id="remote-controls">
+      <div class="remote-row">
+        <button class="remote-btn ch" onclick="tvChUp()" title="Chaîne +">CH ▲</button>
+        <button class="remote-btn ch" onclick="tvChDown()" title="Chaîne -">CH ▼</button>
+        <button class="remote-btn g" onclick="tvGuide()" title="Guide TV">G</button>
+        <button class="remote-btn replay" onclick="toggleReplay()" title="Replay">Replay</button>
+      </div>
+      <div class="remote-row">
+        <button class="remote-btn" onclick="moveApp(-1)">◀</button>
+        <button class="remote-btn" onclick="tvUp()" title="↑">▲</button>
+        <button class="remote-btn" onclick="moveApp(1)">▶</button>
+      </div>
+      <div class="remote-row">
+        <button class="remote-btn" onclick="tvLeft()" title="←">◄</button>
+        <button class="remote-btn ok" onclick="tvOk()" title="OK">OK</button>
+        <button class="remote-btn" onclick="tvRight()" title="→">►</button>
+      </div>
+      <div class="remote-row">
+        <button class="remote-btn" onclick="tvDown()" title="↓">▼</button>
+        <button class="remote-btn home" onclick="goHome()" title="Accueil">🏠</button>
+      </div>
+      <div class="remote-row">
+        <button class="remote-btn" onclick="tvShowChannelList()" title="Liste chaînes">📺</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Stockage local des apps installées
+    let installedAppIds = JSON.parse(localStorage.getItem("tv_installed_apps") || "null");
+    if (!installedAppIds) {
+      installedAppIds = ["youtube","weather","browser","gallery","settings","appstore","spotify","tv"];
+      localStorage.setItem("tv_installed_apps", JSON.stringify(installedAppIds));
+    }
+    // AppStore catalogue
+    const appCatalog = [
+      {
+        id: 'youtube',
+        name: 'YouTube',
+        iconHTML: '<i class="fab fa-youtube" style="color:#ff3333"></i>',
+        desc: "Regardez les vidéos du monde entier.",
+        color: '#f00',
+        render: function() {
+          return `
+            <div class="app-container" style="align-items:center;justify-content:center;">
+              <h2><i class="fab fa-youtube" style="color:#ff3333"></i> YouTube</h2>
+              <iframe id="yt-player" src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&controls=1"
+                allowfullscreen allow="autoplay"></iframe>
+            </div>`;
+        }
+      },
+      {
+        id: 'weather',
+        name: 'Météo',
+        iconHTML: '<i class="fas fa-cloud-sun" style="color:#3abaf4"></i>',
+        desc: "Prévisions météo locales.",
+        color: '#3abaf4',
+        render: function() {
+          // Simulate weather data
+          const temp = Math.floor(16 + Math.random()*13);
+          const city = "Paris";
+          const desc = ["Ensoleillé", "Nuageux", "Pluvieux", "Partiellement ensoleillé"][
+            Math.floor(Math.random()*4)
+          ];
+          const icon = desc.includes("Pluvieux") ? '<i class="fas fa-cloud-showers-heavy"></i>' : (desc.includes("Nuageux") ? '<i class="fas fa-cloud"></i>' : '<i class="fas fa-sun"></i>');
+          return `
+            <div class="app-container">
+              <h2><i class="fas fa-cloud-sun" style="color:#3abaf4"></i> Météo</h2>
+              <div class="weather-block">
+                <span class="weather-icon">${icon}</span>
+                <div>
+                  <div class="weather-details">${city}</div>
+                  <div style="font-size:1.3rem">${desc}</div>
+                  <div style="font-size:2rem;margin-top:10px;">${temp}°C</div>
+                </div>
+              </div>
+            </div>`;
+        }
+      },
+      {
+        id: 'browser',
+        name: 'Navigateur',
+        iconHTML: '<i class="fas fa-globe" style="color:#4e7cff"></i>',
+        desc: "Naviguez sur le web.",
+        color: '#4e7cff',
+        render: function() {
+          return `
+            <div class="app-container">
+              <h2><i class="fas fa-globe" style="color:#4e7cff"></i> Navigateur Web</h2>
+              <form id="browser-form" style="margin-bottom:14px;">
+                <input id="browser-url" type="text" style="width:340px;font-size:1.1em;border-radius:6px;padding:6px;" placeholder="https://...">
+                <button type="submit" style="padding:7px 15px;margin-left:8px;">Aller</button>
+              </form>
+              <iframe id="browser-view" src="https://fr.wikipedia.org" style="width:97%;height:72%;border-radius:12px;border:none;background:#fff;"></iframe>
+            </div>
+          `;
+        }
+      },
+      {
+        id: 'gallery',
+        name: 'Galerie',
+        iconHTML: '<i class="far fa-images" style="color:#d1a928"></i>',
+        desc: "Vos photos préférées.",
+        color: '#d1a928',
+        render: function() {
+          const images = [
+            "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=480&q=80",
+            "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=480&q=80",
+            "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=480&q=80",
+            "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=480&q=80"
+          ];
+          return `
+            <div class="app-container">
+              <h2><i class="far fa-images" style="color:#d1a928"></i> Galerie Photo</h2>
+              <div style="display: flex; gap: 24px; margin-top: 18px; flex-wrap:wrap;">
+                ${images.map(url => `<img src="${url}" style="width:220px;height:140px;object-fit:cover;border-radius:11px;box-shadow:0 4px 16px #0004;" alt="photo">`).join('')}
+              </div>
+            </div>
+          `;
+        }
+      },
+      {
+        id: 'settings',
+        name: 'Paramètres',
+        iconHTML: '<i class="fas fa-cog" style="color:#aaa"></i>',
+        desc: "Réglez votre TV.",
+        color: '#888',
+        render: function() {
+          return `
+            <div class="app-container">
+              <h2><i class="fas fa-cog" style="color:#aaa"></i> Paramètres</h2>
+              <div class="setting">
+                <label>Mode sombre :
+                  <input type="checkbox" class="switch" id="darkmode-switch">
+                </label>
+              </div>
+              <div class="setting">
+                <label>Volume :
+                  <input type="range" min="0" max="100" value="60" id="volume-slider">
+                  <span id="volume-value">60</span>%
+                </label>
+              </div>
+            </div>
+          `;
+        }
+      },
+      {
+        id: 'appstore',
+        name: 'App Store',
+        iconHTML: '<i class="fas fa-store" style="color:#59a6ff"></i>',
+        desc: "Ajoutez plus d'applications.",
+        color: '#59a6ff',
+        render: function() {
+          return renderAppStore();
+        }
+      },
+      {
+        id: 'spotify',
+        name: 'Spotify',
+        iconHTML: '<i class="fab fa-spotify" style="color:#1db954"></i>',
+        desc: "Écoutez de la musique.",
+        color: '#1db954',
+        render: function() {
+          return `
+            <div class="app-container" style="align-items:center;">
+              <h2><i class="fab fa-spotify" style="color:#1db954"></i> Spotify</h2>
+              <iframe id="spotify-player" src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M?utm_source=generator"
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+              <div style="margin-top:20px;color:#bbb;font-size:1.05em;">Playlist : Today's Top Hits</div>
+            </div>
+          `;
+        }
+      },
+      {
+        id: 'tv',
+        name: 'TV Direct',
+        iconHTML: '<i class="fas fa-tv" style="color:#e07c26"></i>',
+        desc: "Regardez la TV en direct et en replay.",
+        color: '#e07c26',
+        render: function() {
+          return renderLiveTV();
+        }
+      },
+      {
+        id: 'calculator',
+        name: 'Calculatrice',
+        iconHTML: '<i class="fas fa-calculator" style="color:#3cb371"></i>',
+        desc: "Faites des calculs rapides.",
+        color: '#3cb371',
+        render: function() {
+          return `
+            <div class="app-container" style="align-items:center;">
+              <h2><i class="fas fa-calculator" style="color:#3cb371"></i> Calculatrice</h2>
+              <div id="calc">
+                <input id="calc-display" type="text" style="width:220px;font-size:2em;border-radius:7px;margin-bottom:14px;padding:6px;text-align:right;" readonly>
+                <div style="display:grid;grid-template-columns:repeat(4,53px);gap:7px;">
+                  ${["7","8","9","/",
+                      "4","5","6","*",
+                      "1","2","3","-",
+                      "0",".","=","+"].map(val=>`<button onclick="calcInput('${val}')">${val}</button>`).join('')}
+                  <button onclick="calcClear()" style="grid-column:span 4;background:#e07c26;color:#fff;">C</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      },
+      {
+        id: 'news',
+        name: 'Actu',
+        iconHTML: '<i class="fas fa-newspaper" style="color:#1976d2"></i>',
+        desc: "Dernières actualités.",
+        color: '#1976d2',
+        render: function() {
+          return `
+            <div class="app-container">
+              <h2><i class="fas fa-newspaper" style="color:#1976d2"></i> Actualités</h2>
+              <ul style="margin-top:18px;font-size:1.07em;">
+                <li><b>Intelligence Artificielle</b> : ChatGPT continue de révolutionner le web (2025).</li>
+                <li><b>Météo</b> : Orages attendus cette semaine dans le nord.</li>
+                <li><b>Sport</b> : L'équipe de France se qualifie pour la finale !</li>
+                <li><b>Économie</b> : Le bitcoin franchit la barre des 100 000€.</li>
+                <li><b>Culture</b> : Le festival de Cannes bat son plein.</li>
+              </ul>
+            </div>
+          `;
+        }
+      }
+    ];
+
+    // Helper: apps index by id
+    function getAppById(id) {
+      return appCatalog.find(app=>app.id===id);
+    }
+
+    // --- Injection dynamique du bar d'applis ---
+    let selectedAppIdx = 0;
+    let currentAppOpen = null;
+
+    function getInstalledApps() {
+      return installedAppIds.map(id => getAppById(id)).filter(Boolean);
+    }
+
+    function renderAppBar() {
+      const appBar = document.getElementById('app-bar');
+      const apps = getInstalledApps();
+      appBar.innerHTML = apps.map((app, idx) => `
+        <div class="app-icon${selectedAppIdx===idx?' selected':''}" tabindex="0" style="background:${app.color};"
+          onclick="selectApp(${idx});openApp();" onfocus="selectApp(${idx});" id="appicon-${app.id}">
+          <span style="font-size:38px;">${app.iconHTML}</span>
+          <span class="app-label">${app.name}</span>
+        </div>
+      `).join('');
+    }
+
+    window.selectApp = function(idx) {
+      selectedAppIdx = idx;
+      renderAppBar();
+    };
+
+    window.openApp = function() {
+      currentAppOpen = selectedAppIdx;
+      const apps = getInstalledApps();
+      const screen = document.getElementById('screen');
+      screen.innerHTML = apps[selectedAppIdx].render();
+      setTimeout(() => {
+        if (apps[selectedAppIdx].id === "settings") {
+          const darkmodeSwitch = document.getElementById("darkmode-switch");
+          darkmodeSwitch?.addEventListener("change", function() {
+            document.body.style.background = this.checked ? "#15181f" : "#23272f";
+          });
+          const volumeSlider = document.getElementById("volume-slider");
+          const volumeValue = document.getElementById("volume-value");
+          volumeSlider?.addEventListener("input", function() {
+            volumeValue.textContent = this.value;
+          });
+        }
+        if (apps[selectedAppIdx].id === "browser") {
+          const browserForm = document.getElementById("browser-form");
+          const iframe = document.getElementById("browser-view");
+          browserForm?.addEventListener("submit", function(e) {
+            e.preventDefault();
+            let val = document.getElementById("browser-url").value;
+            if (!/^https?:\/\//.test(val)) val = "https://" + val;
+            iframe.src = val;
+          });
+        }
+        if (apps[selectedAppIdx].id === "appstore") {
+          Array.from(document.querySelectorAll('.store-card button[data-appid]')).forEach(btn => {
+            btn.addEventListener('click', function() {
+              const appId = this.getAttribute('data-appid');
+              if (!installedAppIds.includes(appId)) {
+                installedAppIds.push(appId);
+                localStorage.setItem("tv_installed_apps", JSON.stringify(installedAppIds));
+                renderAppBar();
+                openApp();
+              }
+            });
+          });
+        }
+        if (apps[selectedAppIdx].id === "calculator") {
+          document.getElementById("calc-display").value = "";
+          window.calcInput = function(val) {
+            const d = document.getElementById("calc-display");
+            if(val==='=') {
+              try { d.value = eval(d.value); } catch { d.value="Err"; }
+            } else { d.value += val; }
+          };
+          window.calcClear = function() {
+            document.getElementById("calc-display").value = "";
+          };
+        }
+        if (apps[selectedAppIdx].id === "tv") {
+          setupTVControls();
+        }
+      }, 80);
+    };
+
+    window.goHome = function() {
+      currentAppOpen = null;
+      document.getElementById('screen').innerHTML = "<div style='color:#888;font-size:2.3rem;text-align:center;width:100%;padding-top:19vh'>Bienvenue sur votre Smart TV !<br><span style='font-size:1.1rem;color:#bbb;'>Sélectionnez une application ci-dessous</span></div>";
+    };
+
+    window.moveApp = function(dir) {
+      if (currentAppOpen !== null) return; // Only on home
+      const apps = getInstalledApps();
+      selectedAppIdx = (selectedAppIdx + dir + apps.length) % apps.length;
+      renderAppBar();
+      const appIcon = document.getElementById('appicon-' + apps[selectedAppIdx].id);
+      if (appIcon) appIcon.focus();
+    };
+
+    // TV Channels & TV app state
+    const tvChannels = [
+      {
+        name: "TF1",
+        icon: '<img src="https://upload.wikimedia.org/wikipedia/commons/9/9f/TF1_logo_2023.svg" style="height:22px;vertical-align:middle;">',
+        url: "https://www.tf1.fr/tf1/direct",
+        replay: "https://www.tf1.fr/tf1/replay",
+        guide: "The Voice Kids, Demain nous appartient, Journal 20h"
+      },
+      {
+        name: "France 2",
+        icon: '<img src="https://upload.wikimedia.org/wikipedia/commons/8/8d/France_2_Logo_2018.svg" style="height:22px;vertical-align:middle;">',
+        url: "https://www.france.tv/france-2/direct.html",
+        replay: "https://www.france.tv/france-2/",
+        guide: "Un si grand soleil, N’oubliez pas les paroles, Journal 20h"
+      },
+      {
+        name: "M6",
+        icon: '<img src="https://upload.wikimedia.org/wikipedia/commons/6/6d/M6_logo_2023.svg" style="height:22px;vertical-align:middle;">',
+        url: "https://www.6play.fr/m6/direct",
+        replay: "https://www.6play.fr/m6/replay",
+        guide: "Pékin Express, Scènes de ménages, Le 19.45"
+      },
+      {
+        name: "CSTAR",
+        icon: '<img src="https://upload.wikimedia.org/wikipedia/commons/f/f5/CStar_logo_2016.svg" style="height:22px;vertical-align:middle;">',
+        url: "https://www.dailymotion.com/embed/video/x5gv1xk",
+        replay: "https://www.cstar.fr/replay",
+        guide: "Clips, CStar Hits, Live Session"
+      },
+      {
+        name: "BFMTV",
+        icon: '<img src="https://upload.wikimedia.org/wikipedia/commons/d/dc/BFM_TV_logo_2021.svg" style="height:22px;vertical-align:middle;">',
+        url: "https://www.bfmtv.com/mediaplayer/live-video/",
+        replay: "https://www.bfmtv.com/replay/",
+        guide: "News, Débat, Reportages"
+      },
+      {
+        name: "Arte",
+        icon: '<img src="https://upload.wikimedia.org/wikipedia/commons/3/31/Arte_logo_2017.svg" style="height:22px;vertical-align:middle;">',
+        url: "https://www.arte.tv/fr/direct/",
+        replay: "https://www.arte.tv/fr/videos/replay/",
+        guide: "Documentaires, 28 minutes, Tracks"
+      },
+      {
+        name: "Novo19",
+        icon: '<img src="https://static.novo19.fr/img/logo-novo19.svg" style="height:22px;vertical-align:middle;">',
+        url: "https://www.novo19.fr/direct",
+        replay: "https://www.novo19.fr/replay",
+        guide: "Talks, Séries, Infos, Novo Prime"
+      },
+      {
+        name: "T18",
+        icon: '<img src="https://www.t18.fr/medias/logo-t18.svg" style="height:22px;vertical-align:middle;">',
+        url: "https://www.t18.fr/direct",
+        replay: "https://www.t18.fr/replay",
+        guide: "T18 News, Séries, Divertissement"
+      },
+      {
+        name: "franceinfo",
+        icon: '<img src="https://upload.wikimedia.org/wikipedia/commons/0/09/Franceinfo_logo_2016.svg" style="height:22px;vertical-align:middle;">',
+        url: "https://www.francetvinfo.fr/en-direct/tv.html",
+        replay: "https://www.francetvinfo.fr/replay-jt/",
+        guide: "JT franceinfo, Débats, Dossiers"
+      },
+      {
+        name: "CNEWS",
+        icon: '<img src="https://upload.wikimedia.org/wikipedia/commons/8/87/CNEWS_Logo.svg" style="height:22px;vertical-align:middle;">',
+        url: "https://www.cnews.fr/direct",
+        replay: "https://www.cnews.fr/replay",
+        guide: "Le Direct, L’Heure des Pros, débats"
+      },
+      {
+        name: "CANAL+ (Clair)",
+        icon: '<img src="https://upload.wikimedia.org/wikipedia/commons/d/d7/Logo_CANAL%2B_2013.svg" style="height:22px;vertical-align:middle;">',
+        url: "https://www.canalplus.com/chaine/canal-plus-en-clair",
+        replay: "https://www.canalplus.com/replay",
+        guide: "Le Grand Journal, Cinéma, Sport"
+      },
+      {
+        name: "Demo TV 1",
+        icon: '<i class="fas fa-flask" style="color:#59a6ff;font-size:22px;vertical-align:middle"></i>',
+        url: "https://www.youtube-nocookie.com/embed/5qap5aO4i9A?autoplay=1",
+        replay: "https://www.youtube.com/embed/videoseries?list=PL4fGSI1pDJn7lT2qfpyJ6qJrUQY9j1Lq7",
+        guide: "Démo 24/7 : musique, info, test player"
+      }
+    ];
+    let tvCurrentChannelIdx = 0;
+    let tvListModalOpen = false;
+    let tvGuideModalOpen = false;
+    let tvReplayMode = false;
+
+    // TV Direct rendering
+    function renderLiveTV() {
+      tvCurrentChannelIdx = 0;
+      tvListModalOpen = false;
+      tvGuideModalOpen = false;
+      tvReplayMode = false;
+      return `
+        <div class="app-container" id="tv-app-container" style="align-items:center;position:relative;">
+          <h2><i class="fas fa-tv" style="color:#e07c26"></i> TV en Direct <span id="tv-mode-badge" style="background:#59a6ff;color:#fff;font-size:0.7em;border-radius:7px;padding:2px 10px 2px 10px;display:none;vertical-align:middle;margin-left:12px">REPLAY</span></h2>
+          <iframe id="tv-live-player" src="${tvChannels[0].url}" allowfullscreen allow="autoplay"></iframe>
+          <iframe id="tv-replay-player" src="" allowfullscreen allow="autoplay" style="display:none"></iframe>
+          <div class="tv-channel-bar" id="tv-channel-bar">
+            ${tvChannels.map((ch,i)=>`
+              <button class="tv-channel-btn${i===0?' selected':''}" data-idx="${i}">
+                ${ch.icon} <span style="margin-left:7px;">${ch.name}</span>
+              </button>
+            `).join('')}
+          </div>
+          <div class="tv-replay-bar" id="tv-replay-bar" style="display:none;">
+            <button class="tv-replay-btn" onclick="prevReplay()">◀ Replay précédent</button>
+            <button class="tv-replay-btn" onclick="nextReplay()">Replay suivant ▶</button>
+          </div>
+          <div style="margin-top:11px;color:#bbb;font-size:0.98em;">Sources : Players officiels (certains contenus nécessitent une connexion ou ne sont pas embarquables)</div>
+        </div>
+      `;
+    }
+
+    function setupTVControls() {
+      setTVChannel(tvCurrentChannelIdx, tvReplayMode);
+      Array.from(document.querySelectorAll('.tv-channel-btn')).forEach(btn => {
+        btn.addEventListener('click', function() {
+          const idx = parseInt(this.getAttribute('data-idx'));
+          setTVChannel(idx, tvReplayMode);
+        });
+      });
+      document.getElementById('tv-app-container').tabIndex = 0;
+      document.getElementById('tv-app-container').focus();
+      // Mode badge
+      updateTVModeBadge();
+    }
+
+    function setTVChannel(idx, replay = false) {
+      tvCurrentChannelIdx = (idx + tvChannels.length) % tvChannels.length;
+      tvReplayMode = replay;
+      const ch = tvChannels[tvCurrentChannelIdx];
+      const liveIframe = document.getElementById("tv-live-player");
+      const replayIframe = document.getElementById("tv-replay-player");
+      if (replay && ch.replay) {
+        liveIframe.style.display = "none";
+        replayIframe.style.display = "block";
+        replayIframe.src = ch.replay;
+      } else {
+        replayIframe.style.display = "none";
+        liveIframe.style.display = "block";
+        liveIframe.src = ch.url;
+      }
+      Array.from(document.querySelectorAll('.tv-channel-btn')).forEach((el,i)=>el.classList.toggle('selected',i===tvCurrentChannelIdx));
+      updateTVModeBadge();
+      // Update modal list highlight if open
+      if (tvListModalOpen) updateChannelListModal();
+    }
+
+    function updateTVModeBadge() {
+      const badge = document.getElementById('tv-mode-badge');
+      const replayBar = document.getElementById('tv-replay-bar');
+      if (!badge || !replayBar) return;
+      if (tvReplayMode) {
+        badge.style.display = "inline-block";
+        replayBar.style.display = "flex";
+      } else {
+        badge.style.display = "none";
+        replayBar.style.display = "none";
+      }
+    }
+
+    window.toggleReplay = function() {
+      if (currentAppOpen==null || getInstalledApps()[selectedAppIdx].id!=="tv") return;
+      tvReplayMode = !tvReplayMode;
+      setTVChannel(tvCurrentChannelIdx, tvReplayMode);
+    };
+
+    window.prevReplay = function() {
+      if (tvReplayMode) setTVChannel(tvCurrentChannelIdx-1, true);
+    };
+    window.nextReplay = function() {
+      if (tvReplayMode) setTVChannel(tvCurrentChannelIdx+1, true);
+    };
+
+    window.tvChUp = function() {
+      if (currentAppOpen==null || getInstalledApps()[selectedAppIdx].id!=="tv") return;
+      setTVChannel(tvCurrentChannelIdx+1, tvReplayMode);
+    };
+    window.tvChDown = function() {
+      if (currentAppOpen==null || getInstalledApps()[selectedAppIdx].id!=="tv") return;
+      setTVChannel(tvCurrentChannelIdx-1, tvReplayMode);
+    };
+
+    window.tvUp = function() {
+      if (tvListModalOpen) {
+        tvCurrentChannelIdx = (tvCurrentChannelIdx-1+tvChannels.length)%tvChannels.length;
+        updateChannelListModal();
+      }
+    };
+    window.tvDown = function() {
+      if (tvListModalOpen) {
+        tvCurrentChannelIdx = (tvCurrentChannelIdx+1)%tvChannels.length;
+        updateChannelListModal();
+      }
+    };
+    window.tvLeft = function() {};
+    window.tvRight = function() {};
+
+    window.tvOk = function() {
+      if (tvListModalOpen) {
+        setTVChannel(tvCurrentChannelIdx, tvReplayMode);
+        closeChannelListModal();
+      }
+    };
+
+    window.tvShowChannelList = function() {
+      if (tvListModalOpen) return;
+      tvListModalOpen = true;
+      const modal = document.createElement("div");
+      modal.className = "tv-channel-list-modal";
+      modal.id = "tv-channel-list-modal";
+      modal.innerHTML = `
+        <h3>Liste des chaînes</h3>
+        <ul>
+          ${tvChannels.map((ch,i)=>`
+            <li class="${i===tvCurrentChannelIdx?'selected':''}" data-idx="${i}">${ch.icon} <span style="margin-left:7px;">${ch.name}</span></li>
+          `).join('')}
+        </ul>
+        <div style="margin-top:10px;font-size:0.95em;color:#bbb;">Utilisez ↑ ↓ pour naviguer, OK pour valider</div>
+      `;
+      document.getElementById("tv-app-container").appendChild(modal);
+
+      Array.from(modal.querySelectorAll("li")).forEach(li=>{
+        li.addEventListener('click',function(){
+          tvCurrentChannelIdx=parseInt(this.getAttribute('data-idx'));
+          setTVChannel(tvCurrentChannelIdx, tvReplayMode);
+          closeChannelListModal();
+        });
+      });
+      document.addEventListener('keydown', tvListKeyHandler);
+    };
+
+    function updateChannelListModal() {
+      const lis = Array.from(document.querySelectorAll('#tv-channel-list-modal li'));
+      lis.forEach((li,i)=>{
+        li.classList.toggle('selected',i===tvCurrentChannelIdx);
+      });
+    }
+    function closeChannelListModal() {
+      tvListModalOpen = false;
+      const modal = document.getElementById("tv-channel-list-modal");
+      if (modal) modal.remove();
+      document.removeEventListener('keydown', tvListKeyHandler);
+    }
+    function tvListKeyHandler(e) {
+      if (!tvListModalOpen) return;
+      if (e.key==="ArrowUp") { tvUp(); e.preventDefault();}
+      else if (e.key==="ArrowDown") { tvDown(); e.preventDefault();}
+      else if (e.key==="Enter" || e.key===" ") { tvOk(); e.preventDefault();}
+      else if (e.key==="Escape") { closeChannelListModal(); }
+    }
+
+    window.tvGuide = function() {
+      if (tvGuideModalOpen) return;
+      tvGuideModalOpen = true;
+      const modal = document.createElement("div");
+      modal.className = "tv-guide-modal";
+      modal.id = "tv-guide-modal";
+      modal.innerHTML = `
+        <h3>Guide TV</h3>
+        <table class="tv-guide-table">
+          <tr><th>Chaîne</th><th>Prochainement</th></tr>
+          ${tvChannels.map(ch=>`
+            <tr>
+              <td>${ch.icon} <span style="margin-left:7px;">${ch.name}</span></td>
+              <td>${ch.guide}</td>
+            </tr>
+          `).join('')}
+        </table>
+        <div style="margin-top:10px;font-size:0.95em;color:#bbb;">Appuyez sur G ou Échap pour fermer</div>
+      `;
+      document.getElementById("tv-app-container").appendChild(modal);
+      document.addEventListener('keydown', tvGuideKeyHandler);
+    };
+    function closeTVGuideModal() {
+      tvGuideModalOpen=false;
+      const modal = document.getElementById("tv-guide-modal");
+      if (modal) modal.remove();
+      document.removeEventListener('keydown', tvGuideKeyHandler);
+    }
+    function tvGuideKeyHandler(e) {
+      if (!tvGuideModalOpen) return;
+      if (e.key==="g" || e.key==="G" || e.key==="Escape") closeTVGuideModal();
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (document.activeElement && document.activeElement.tagName === "INPUT") return;
+      if (currentAppOpen!=null && getInstalledApps()[selectedAppIdx].id==="tv") {
+        if (tvListModalOpen) return;
+        if (e.key==="ArrowUp") { tvChUp(); e.preventDefault(); }
+        else if (e.key==="ArrowDown") { tvChDown(); e.preventDefault(); }
+        else if (e.key==="c" || e.key==="C") { tvShowChannelList(); e.preventDefault(); }
+        else if (e.key==="g" || e.key==="G") { tvGuide(); e.preventDefault(); }
+        else if (e.key==="r" || e.key==="R") { toggleReplay(); e.preventDefault();}
+      } else {
+        if (e.key === "ArrowLeft") moveApp(-1);
+        if (e.key === "ArrowRight") moveApp(1);
+        if (e.key === "Enter" || e.key === " ") openApp();
+        if (e.key === "Escape" || e.key === "Home") goHome();
+      }
+    });
+
+    function renderAppStore() {
+      return `
+        <div class="app-container">
+          <h2><i class="fas fa-store" style="color:#59a6ff"></i> App Store TV</h2>
+          <div class="store-grid">
+            ${appCatalog.filter(app => app.id!=="appstore").map(app => `
+              <div class="store-card${installedAppIds.includes(app.id)?' installed':''}">
+                <div class="store-icon">${app.iconHTML}</div>
+                <div class="store-name">${app.name}</div>
+                <div class="store-desc">${app.desc}</div>
+                <button data-appid="${app.id}" ${installedAppIds.includes(app.id)?'disabled':''}>
+                  ${installedAppIds.includes(app.id)?'Installée':'Installer'}
+                </button>
+              </div>
+            `).join('')}
+          </div>
+          <div style="color:#bbb;font-size:0.99em;margin-top:22px;">Plus d'apps seront bientôt disponibles !</div>
+        </div>
+      `;
+    }
+
+    // --- Premier affichage ---
+    renderAppBar();
+    goHome();
+  </script>
+</body>
+</html>
